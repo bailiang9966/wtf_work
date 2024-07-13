@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import requests
 
+import random
 from app_tools import dt_utils
 from app_tools.logger_config import logging
 
@@ -21,11 +22,31 @@ class SYMBOL_FILTER():
     def __init__(self):
 
         self.period = 60
-
+        self.use_proxy = True
         self.symbol_info ={}
 
         self.executor = ThreadPoolExecutor(max_workers=10)
-    
+        self.proxy_data = {}
+    def get_proxy_data(self):
+        url = 'https://raw.githubusercontent.com/bailiang9966/ccpp/main/out/output.json'
+        response = requests.get(url)
+        self.proxy_data = json.loads(response.text)
+
+    def execute_request(self,url,proxy_key = None,params=None):
+        if not self.use_proxy:
+            return requests.get(url,params=params)
+        else:
+            proxy = random.choice(self.proxy_data[proxy_key])
+            while True:
+                try:
+                    response = requests.get(url, params=params,proxies={'http': proxy, 'https': proxy}, timeout=3)
+                    if response.status_code == 200:
+                        return response
+                except (requests.exceptions.Timeout, requests.exceptions.RequestException):
+                    # 处理超时和其他请求异常
+                    self.proxy_data[proxy_key].remove(proxy)
+                
+                proxy = random.choice(self.proxy_data[proxy_key])
     def get_kline_volatility(self,symbol):
         '''
         查询合约和现货k线历史合并为一个df后转换为list
@@ -40,7 +61,7 @@ class SYMBOL_FILTER():
             'endTime':end_ts,
 
         }
-        uf_klines = requests.get(self.UF_KLINE_URL,params=params).json()
+        uf_klines = self.execute_request(self.UF_KLINE_URL,proxy_key='bn_uf',params=params).json()
         
         df = pd.DataFrame(uf_klines,columns=self.K_COLUMNS)
         df[self.K_FLOAT_COLUMNS] = df[self.K_FLOAT_COLUMNS].astype(float)
@@ -52,9 +73,11 @@ class SYMBOL_FILTER():
     def get_bn_exchange(self,market_type ):
         if market_type == 'SPOT':
             url = 'https://api.binance.com/api/v3/exchangeInfo'
+            result = self.execute_request(url,proxy_key='bn_spot').json()
         else:
             url ='https://fapi.binance.com/fapi/v1/exchangeInfo'
-        result = requests.get(url).json()
+            result = self.execute_request(url,proxy_key='bn_uf').json()
+        # result = self.execute_request(url).json()
         symbols = result['symbols']
     
         data = []    
@@ -105,7 +128,9 @@ class SYMBOL_FILTER():
         
     def run(self):
         logging.info('start')
-
+        if self.use_proxy:
+            self.get_proxy_data()
+            logging.info(f'proxy_data:{self.proxy_data}')
         result = self.get_symbols()
         logging.info(f'币种总数:{len(self.symbol_info)}')
         logging.info(f'过滤后:{len(result)}')
