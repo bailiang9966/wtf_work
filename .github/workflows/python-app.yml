@@ -39,8 +39,8 @@ jobs:
       run: python3 symbol_bn.py
     - name: Upload out file
       run: |
-          git config --global user.name "bailiang9966"
-          git config --global user.email "bailiang9966@gmail.com"
-          git add out/
-          git commit -m "Update  on `date +'%Y-%m-%d %H:%M:%S'`"
-          git push 
+        git config --global user.name "bailiang9966"
+        git config --global user.email "bailiang9966@gmail.com"
+        git add out/
+        git commit -m "Update  on `date +'%Y-%m-%d %H:%M:%S'`"
+        git push 
