@@ -34,11 +34,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Run script
-        run: python symbol_bn.py
+      run: python3 symbol_bn.py
     - name: Upload out file
-        run: |
-            git config --global user.name "bailiang9966"
-            git config --global user.email "bailiang9966@gmail.com"
-            git add out/
-            git commit -m "Update  on `date +'%Y-%m-%d %H:%M:%S'`"
-            git push 
+      run: |
+          git config --global user.name "bailiang9966"
+          git config --global user.email "bailiang9966@gmail.com"
+          git add out/
+          git commit -m "Update  on `date +'%Y-%m-%d %H:%M:%S'`"
+          git push 
